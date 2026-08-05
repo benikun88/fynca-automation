@@ -1,0 +1,88 @@
+name: Playwright CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+          mkdir -p reports/allure-results reports/playwright
+
+      - name: Restore auth storage state
+        env:
+          FYNCA_STORAGE_STATE_B64: ${{ secrets.FYNCA_STORAGE_STATE_B64 }}
+        run: |
+          mkdir -p auth
+          if [ -n "$FYNCA_STORAGE_STATE_B64" ]; then
+            echo "$FYNCA_STORAGE_STATE_B64" | base64 -d > auth/storage_state.json
+          else
+            echo "Missing FYNCA_STORAGE_STATE_B64 secret" >&2
+            exit 1
+          fi
+
+      - name: Run tests
+        env:
+          FYNCA_BASE_URL: https://app.fynca.io
+          FYNCA_CANVAS_URL: ${{ vars.FYNCA_CANVAS_URL }}
+        run: |
+          export FYNCA_CANVAS_URL="${FYNCA_CANVAS_URL:-https://app.fynca.io/canvas/19a6606e631640d979a4a2de}"
+          pytest -m "smoke or canvas or monkey or exploratory" \
+            --alluredir=reports/allure-results \
+            --output=reports/playwright
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports
+          path: reports/playwright
+          if-no-files-found: ignore
+
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: reports/allure-results
+          if-no-files-found: ignore
+
+      - name: Generate Allure report
+        if: always()
+        uses: simple-elf/allure-report-action@v1.11
+        with:
+          allure_results: reports/allure-results
+          allure_report: reports/allure-report
+          keep_reports: 20
+
+      - name: Publish Allure report
+        if: always() && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: reports/allure-report
+          destination_dir: allure
