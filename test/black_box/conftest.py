@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 import pytest
 from dotenv import load_dotenv
 
-from fynca import Fynca
-from models import TestConfig
+from test.black_box.fynca import Fynca
+from test.black_box.models import TestConfig
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_ROOT = Path(__file__).resolve().parent
+_ROOT = Path(__file__).resolve().parents[2]
 _AUTH_DIR = _ROOT / "auth"
 _STORAGE_STATE = _AUTH_DIR / "storage_state.json"
 

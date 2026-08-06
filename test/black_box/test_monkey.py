@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 import random
@@ -8,7 +8,7 @@ import allure
 import pytest
 
 if TYPE_CHECKING:
-    from fynca.canvas_page import CanvasPage
+    from test.black_box.fynca.canvas_page import CanvasPage
 
 logger = logging.getLogger(__name__)
 

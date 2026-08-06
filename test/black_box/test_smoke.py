@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from fynca import Fynca
+    from test.black_box.fynca import Fynca
 
 logger = logging.getLogger(__name__)
 

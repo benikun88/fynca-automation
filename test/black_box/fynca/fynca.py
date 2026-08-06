@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from fynca.canvas_page import CanvasPage
-from fynca.home_page import HomePage
-from fynca.login_page import LoginPage
+from test.black_box.fynca.canvas_page import CanvasPage
+from test.black_box.fynca.home_page import HomePage
+from test.black_box.fynca.login_page import LoginPage
 
 if TYPE_CHECKING:
     from playwright.sync_api import Page

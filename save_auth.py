@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 """One-time headed login that saves Playwright storage state for later tests.
 
@@ -18,7 +18,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 
-from fynca.login_page import LoginPage
+from test.black_box.fynca.login_page import LoginPage
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

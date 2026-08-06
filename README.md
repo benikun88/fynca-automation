@@ -69,16 +69,21 @@ Encode secret (PowerShell):
 
 ## Layout
 
+Standards: [`docs/automation-standart.md`](docs/automation-standart.md)  
+Skill (pages/tests): [`.cursor/skills/create-fynca-automation/`](.cursor/skills/create-fynca-automation/)
+
 ```
 ├── save_auth.py
-├── conftest.py
-├── test_canvas.py
-├── test_monkey.py
-├── test_exploratory.py
-├── fynca/
-│   ├── canvas_page.py
-│   ├── fynca.py
-│   ├── login_page.py
-│   └── home_page.py
+├── docs/automation-standart.md
+├── test/black_box/
+│   ├── conftest.py
+│   ├── models.py
+│   ├── utils.py
+│   ├── test_*.py
+│   └── fynca/                 # POM facade + pages
+│       ├── fynca.py
+│       ├── login_page.py
+│       ├── home_page.py
+│       └── canvas_page.py
 └── .github/workflows/playwright.yml
 ```
