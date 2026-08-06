@@ -26,12 +26,26 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Allure CLI
+        run: |
+          ALLURE_VERSION=2.32.0
+          curl -fsSL "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz" \
+            | sudo tar -xz -C /opt
+          sudo ln -sf "/opt/allure-${ALLURE_VERSION}/bin/allure" /usr/local/bin/allure
+          allure --version
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install --with-deps chromium
-          mkdir -p reports/allure-results reports/playwright
+          mkdir -p reports/allure-results reports/playwright reports/allure-report
 
       - name: Restore auth storage state
         env:
@@ -55,6 +69,16 @@ jobs:
             --alluredir=reports/allure-results \
             --output=reports/playwright
 
+      - name: Generate Allure report
+        if: always()
+        run: |
+          if [ -d reports/allure-results ] && [ "$(ls -A reports/allure-results 2>/dev/null)" ]; then
+            allure generate reports/allure-results --clean -o reports/allure-report
+          else
+            echo "No Allure results found"
+            exit 1
+          fi
+
       - name: Upload Playwright artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -71,16 +95,16 @@ jobs:
           path: reports/allure-results
           if-no-files-found: ignore
 
-      - name: Generate Allure report
+      - name: Upload Allure HTML report
         if: always()
-        uses: simple-elf/allure-report-action@v1.11
+        uses: actions/upload-artifact@v4
         with:
-          allure_results: reports/allure-results
-          allure_report: reports/allure-report
-          keep_reports: 20
+          name: allure-report
+          path: reports/allure-report
+          if-no-files-found: ignore
 
-      - name: Publish Allure report
-        if: always() && github.ref == 'refs/heads/main'
+      - name: Publish Allure to GitHub Pages
+        if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
