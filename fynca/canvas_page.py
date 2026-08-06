@@ -32,7 +32,7 @@ class CanvasPage:
         share = self._page.get_by_role("button", name="Share canvas")
         try:
             share.wait_for()
-        except Exception:
+        except TimeoutError:
             logger.info("Share control not ready — reloading canvas once")
             self._page.reload(wait_until="domcontentloaded")
             share.wait_for()
@@ -46,7 +46,9 @@ class CanvasPage:
         return self._page.get_by_role("button", name="Share canvas").is_visible()
 
     def is_starter_visible(self) -> bool:
-        return self._page.get_by_role("heading", name="Pick your starting point").is_visible()
+        return self._page.get_by_role(
+            "heading", name="Pick your starting point"
+        ).is_visible()
 
     def start_from_scratch(self) -> None:
         logger.info("Starting canvas from scratch with Otto")
@@ -54,6 +56,16 @@ class CanvasPage:
         self._page.get_by_role("heading", name="Pick your starting point").wait_for(
             state="hidden"
         )
+
+    def start_from_idea(self) -> None:
+        logger.info("Starting canvas from an idea with Margo")
+        self._page.get_by_role("button", name="Start from an idea with Margo").click()
+
+    def start_from_holdings(self) -> None:
+        logger.info("Starting canvas from holdings with Nico")
+        self._page.get_by_role(
+            "button", name="Start from what you own with Nico"
+        ).click()
 
     def ensure_workspace_ready(self) -> None:
         if self.is_starter_visible():
@@ -64,10 +76,18 @@ class CanvasPage:
         self._sidebar("Watchlist").click()
         self._page.get_by_role("heading", name="Watchlist").wait_for()
 
+    def filter_watchlist(self, asset_class: str) -> None:
+        logger.info("Filtering watchlist by %s", asset_class)
+        self._page.get_by_role("tab", name=asset_class, exact=True).click()
+
     def open_portfolio(self) -> None:
         logger.info("Opening Portfolio")
         self._sidebar("Portfolio").click()
         self._page.get_by_text("No positions yet", exact=True).first.wait_for()
+
+    def filter_portfolio(self, asset_class: str) -> None:
+        logger.info("Filtering portfolio by %s", asset_class)
+        self._page.get_by_role("tab", name=asset_class, exact=True).click()
 
     def open_canvases(self) -> None:
         logger.info("Opening Canvases")
@@ -84,10 +104,32 @@ class CanvasPage:
         self._sidebar("Academy").click()
         self._page.get_by_role("heading", name="Academy", exact=True).wait_for()
 
+    def open_agents(self) -> None:
+        logger.info("Opening Agents (Bob & Charlie)")
+        self._sidebar("Agents").click()
+        self._page.get_by_role("heading", name="Bob & Charlie").wait_for()
+
+    def open_ideas(self) -> None:
+        logger.info("Opening Ideas")
+        self._sidebar("Ideas").click()
+        self._page.get_by_role("heading", name="Welcome back").wait_for()
+
     def open_toolkit(self) -> None:
         logger.info("Opening Toolkit")
         self._sidebar("Toolkit").click()
         self._page.get_by_role("heading", name="Toolkit").wait_for()
+
+    def select_academy_lesson(self, title: str) -> None:
+        logger.info("Selecting academy lesson: %s", title)
+        self._page.get_by_text(title, exact=False).first.click()
+
+    def enable_pan_mode(self) -> None:
+        logger.info("Enabling pan mode")
+        self._page.get_by_role("button", name="Pan mode").click()
+
+    def enable_selection_mode(self) -> None:
+        logger.info("Enabling selection mode")
+        self._page.get_by_role("button", name="Selection mode").click()
 
     def share(self) -> None:
         logger.info("Opening share canvas")
@@ -139,7 +181,10 @@ class CanvasPage:
         return self._page.get_by_role("heading", name=name).is_visible()
 
     def is_text_visible(self, text: str) -> bool:
-        return self._page.get_by_text(text, exact=True).is_visible()
+        return self._page.get_by_text(text, exact=True).first.is_visible()
+
+    def has_text(self, text: str) -> bool:
+        return self._page.get_by_text(text, exact=False).first.is_visible()
 
     def is_button_visible(self, name: str) -> bool:
         locator = self._page.get_by_role("button", name=name)

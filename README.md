@@ -39,18 +39,15 @@ allure serve reports/allure-results
 ### Post-login flows covered
 
 1. Authenticated canvas loads
-2. Starter picker (Margo / Nico / Otto)
+2. Starter picker (Margo / Nico / Otto + Ask Margo / Show Nico / Just build)
 3. Start from scratch dismisses picker
-4. Watchlist panel
-5. Portfolio panel
-6. Canvases panel
-7. Templates panel
-8. Academy
-9. Zoom / fit controls
-10. Share dialog
-11. Chat Build/Ask (when panel open)
-12. Monkey sidebar clicks
-13. Exploratory locator sweep
+4. Academy Getting Started thesis curriculum (steps 1–6)
+5. Academy topic tracks + advanced lesson modules
+6. Agents (Bob & Charlie) Build/Ask chat
+7. Ideas welcome + catalyst/theme/stock suggestions
+8. Watchlist / Portfolio empty states and filters
+9. Zoom / pan / selection toolbar + Share dialog
+10. Monkey sidebar + exploratory locator sweep
 
 ## CI / Allure
 

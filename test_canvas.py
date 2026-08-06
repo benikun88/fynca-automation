@@ -17,10 +17,14 @@ logger = logging.getLogger(__name__)
 @pytest.mark.xray("FYNCA-CANVAS-001")
 @allure.title("Authenticated canvas loads")
 def test_canvas_loads_when_authenticated(canvas: CanvasPage) -> None:
-    assert "/canvas/" in canvas.get_url(), f"Expected canvas URL, got {canvas.get_url()}"
+    assert "/canvas/" in canvas.get_url(), (
+        f"Expected canvas URL, got {canvas.get_url()}"
+    )
     assert canvas.is_share_visible(), "Share canvas control was not visible"
     assert canvas.is_react_flow_visible(), "React Flow canvas wrapper was not visible"
-    assert canvas.is_button_visible("Toolkit"), "Toolkit sidebar control was not visible"
+    assert canvas.is_button_visible("Toolkit"), (
+        "Toolkit sidebar control was not visible"
+    )
 
 
 @pytest.mark.canvas
@@ -126,6 +130,10 @@ def test_canvas_zoom_controls(canvas: CanvasPage) -> None:
 @pytest.mark.xray("FYNCA-CANVAS-010")
 @allure.title("Bob and Charlie chat supports Build and Ask modes")
 def test_chat_build_and_ask_modes(canvas: CanvasPage) -> None:
+    canvas.ensure_workspace_ready()
+    canvas.dismiss_overlays()
+    canvas.open_agents()
+
     if not canvas.is_chat_visible():
         pytest.skip("Bob & Charlie chat panel is closed on this canvas")
 
