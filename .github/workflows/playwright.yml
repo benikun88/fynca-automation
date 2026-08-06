@@ -7,14 +7,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      has_report: ${{ steps.allure.outputs.has_report }}
 
     steps:
       - name: Checkout
@@ -60,6 +66,7 @@ jobs:
           fi
 
       - name: Run tests
+        id: pytest
         env:
           FYNCA_BASE_URL: https://app.fynca.io
           FYNCA_CANVAS_URL: ${{ vars.FYNCA_CANVAS_URL }}
@@ -70,11 +77,17 @@ jobs:
             --output=reports/playwright
 
       - name: Generate Allure report
+        id: allure
         if: always()
         run: |
+          mkdir -p allure-site
           if [ -d reports/allure-results ] && [ "$(ls -A reports/allure-results 2>/dev/null)" ]; then
             allure generate reports/allure-results --clean -o reports/allure-report
+            cp -r reports/allure-report/. allure-site/
+            echo "has_report=true" >> "$GITHUB_OUTPUT"
           else
+            printf '<!doctype html><html><body><h1>No Allure results from this run</h1></body></html>' > allure-site/index.html
+            echo "has_report=false" >> "$GITHUB_OUTPUT"
             echo "No Allure results found"
             exit 1
           fi
@@ -87,14 +100,6 @@ jobs:
           path: reports/playwright
           if-no-files-found: ignore
 
-      - name: Upload Allure results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: allure-results
-          path: reports/allure-results
-          if-no-files-found: ignore
-
       - name: Upload Allure HTML report
         if: always()
         uses: actions/upload-artifact@v4
@@ -103,10 +108,20 @@ jobs:
           path: reports/allure-report
           if-no-files-found: ignore
 
-      - name: Publish Allure to GitHub Pages
+      - name: Upload Pages artifact
         if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
-        uses: peaceiris/actions-gh-pages@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: reports/allure-report
-          destination_dir: allure
+          path: allure-site
+
+  deploy-pages:
+    needs: test
+    if: always() && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && needs.test.result != 'cancelled'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
