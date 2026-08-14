@@ -53,7 +53,13 @@ allure serve reports/allure-results
 
 Workflow: `.github/workflows/playwright.yml`
 
-Runs on push/PR to `master`, manual dispatch, and **nightly at 00:00 UTC**.
+Runs on:
+
+- push / pull request to `master`
+- manual **Run workflow**
+- **nightly at 00:00 UTC** (03:00 Israel) via `schedule: cron: "0 0 * * *"`
+
+GitHub does not show a separate Nightly button. Open [Playwright CI (push, PR, nightly)](https://github.com/benikun88/fynca-automation/actions/workflows/playwright.yml) and filter **Event → `schedule`**. The first nightly row appears after 00:00 UTC.
 
 Live report: https://benikun88.github.io/fynca-automation/
 
