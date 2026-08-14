@@ -29,15 +29,27 @@ class CanvasPage:
     def reload(self) -> None:
         logger.info("Opening canvas: %s", self._canvas_url)
         self._page.goto(self._canvas_url, wait_until="domcontentloaded")
+        self._raise_if_login_redirect()
         share = self._page.get_by_role("button", name="Share canvas")
         try:
             share.wait_for()
         except TimeoutError:
+            self._raise_if_login_redirect()
             logger.info("Share control not ready — reloading canvas once")
             self._page.reload(wait_until="domcontentloaded")
+            self._raise_if_login_redirect()
             share.wait_for()
         self._page.get_by_role("button", name="Toolkit").wait_for()
         self._page.get_by_test_id("rf__wrapper").wait_for()
+
+    def _raise_if_login_redirect(self) -> None:
+        if "/login" not in self._page.url:
+            return
+        raise RuntimeError(
+            "Saved Clerk session expired or was rejected; landed on login. "
+            "Run save_auth.py locally, then update GitHub secret FYNCA_STORAGE_STATE_B64. "
+            f"Current URL: {self._page.url}"
+        )
 
     def get_url(self) -> str:
         return self._page.url

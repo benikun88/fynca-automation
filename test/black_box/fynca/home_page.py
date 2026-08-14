@@ -21,8 +21,14 @@ class HomePage:
     def reload(self) -> None:
         logger.info("Opening home page")
         self._page.goto(f"{self._base_url}/")
-        self._page.wait_for_url(lambda url: "/login" not in url)
         self._page.locator("body").wait_for(state="visible")
+        if "/login" in self._page.url:
+            raise RuntimeError(
+                "Saved Clerk session expired or was rejected; landed on login. "
+                "Run save_auth.py locally, then update GitHub secret "
+                "FYNCA_STORAGE_STATE_B64. "
+                f"Current URL: {self._page.url}"
+            )
 
     def get_url(self) -> str:
         return self._page.url
