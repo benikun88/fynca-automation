@@ -53,6 +53,10 @@ allure serve reports/allure-results
 
 Workflow: `.github/workflows/playwright.yml`
 
+Runs on push/PR to `master`, manual dispatch, and **nightly at 00:00 UTC**.
+
+Live report: https://benikun88.github.io/fynca-automation/
+
 Required GitHub secret:
 
 - `FYNCA_STORAGE_STATE_B64` — base64 of `auth/storage_state.json`
