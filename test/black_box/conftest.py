@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import allure
 import pytest
 from dotenv import load_dotenv
 
@@ -26,6 +27,64 @@ load_dotenv(_ROOT / ".env")
 
 (_ROOT / "reports" / "allure-results").mkdir(parents=True, exist_ok=True)
 (_ROOT / "reports" / "playwright").mkdir(parents=True, exist_ok=True)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo[None]):
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, f"rep_{report.when}", report)
+
+
+def _test_failed(request: pytest.FixtureRequest) -> bool:
+    for when in ("setup", "call"):
+        report = getattr(request.node, f"rep_{when}", None)
+        if report is not None:
+            return bool(report.failed)
+    return True
+
+
+def _attach_page_artifacts(page: Page, *, failed: bool) -> None:
+    video = page.video
+    if failed:
+        try:
+            try:
+                png = page.screenshot(full_page=True)
+            except Exception:
+                png = page.screenshot()
+            allure.attach(
+                png,
+                name="screenshot",
+                attachment_type=allure.attachment_type.PNG,
+            )
+        except Exception as exc:
+            logger.info("Could not attach screenshot: %s", exc)
+        try:
+            allure.attach(
+                page.url,
+                name="page-url",
+                attachment_type=allure.attachment_type.TEXT,
+            )
+        except Exception:
+            pass
+    try:
+        page.close()
+    except Exception:
+        pass
+    if video is None:
+        return
+    try:
+        video_path = Path(video.path())
+    except Exception:
+        return
+    if failed and video_path.exists():
+        allure.attach.file(
+            str(video_path),
+            name="video",
+            attachment_type=allure.attachment_type.WEBM,
+        )
+        return
+    video_path.unlink(missing_ok=True)
 
 
 @pytest.fixture(scope="session")
@@ -81,10 +140,13 @@ def context(
 
 
 @pytest.fixture
-def page(context: BrowserContext) -> Generator[Page]:
+def page(
+    context: BrowserContext,
+    request: pytest.FixtureRequest,
+) -> Generator[Page]:
     pg = context.new_page()
     yield pg
-    pg.close()
+    _attach_page_artifacts(pg, failed=_test_failed(request))
 
 
 @pytest.fixture
@@ -101,10 +163,12 @@ def canvas(fynca: Fynca):
 def unauthenticated_page(
     browser: Browser,
     browser_context_args: dict,
+    request: pytest.FixtureRequest,
 ) -> Generator[Page]:
     context = browser.new_context(**browser_context_args)
     page = context.new_page()
     yield page
+    _attach_page_artifacts(page, failed=_test_failed(request))
     context.close()
 
 

@@ -737,11 +737,12 @@ logger = logging.getLogger(__name__)
 
 ## Artifacts
 
-On test failure, the framework automatically collects:
+On test failure (including fixture setup), the framework attaches to Allure:
 - Full-page screenshot
-- Video recording of the browser session
+- Page URL
+- Video recording of the browser session (WebM)
 
-Artifacts are saved under `reports/` at the project root (`reports/playwright`, `reports/allure-results`). No manual artifact code is needed in tests. Prefer `@allure.title("...")` on tests for readable Allure reports.
+Files are also kept under `reports/playwright`. Open the failed test in the Allure report to play the video. Prefer `@allure.title("...")` on tests for readable titles.
 
 ## Auth / Session
 

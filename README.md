@@ -63,6 +63,8 @@ GitHub does not show a separate Nightly button. Open [Playwright CI (push, PR, n
 
 Live report: https://benikun88.github.io/fynca-automation/
 
+Failed tests attach a screenshot, page URL, and video in the Allure report.
+
 Required GitHub secret:
 
 - `FYNCA_STORAGE_STATE_B64` — base64 of `auth/storage_state.json`
