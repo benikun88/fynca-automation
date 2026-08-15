@@ -41,8 +41,10 @@ def test_starter_cta_labels_are_visible(canvas: CanvasPage) -> None:
         pytest.skip("Starter picker already dismissed on this canvas")
 
     assert canvas.is_text_visible("Ask Margo")
-    assert canvas.is_text_visible("Show Nico")
-    assert canvas.is_text_visible("Just build")
+    assert canvas.is_text_visible("Tell Nico") or canvas.is_text_visible("Show Nico")
+    assert canvas.is_text_visible("Start with Otto") or canvas.is_text_visible(
+        "Just build"
+    )
 
 
 @pytest.mark.canvas

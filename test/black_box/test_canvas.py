@@ -35,9 +35,15 @@ def test_starter_picker_options_are_visible(canvas: CanvasPage) -> None:
     if not canvas.is_starter_visible():
         pytest.skip("Starter picker already dismissed on this canvas")
 
-    assert canvas.is_button_visible("Start from an idea with Margo")
-    assert canvas.is_button_visible("Start from what you own with Nico")
-    assert canvas.is_button_visible("Start from scratch with Otto")
+    assert canvas.is_button_visible("Ask Margo") or canvas.is_button_visible(
+        "Start from an idea with Margo"
+    )
+    assert canvas.is_button_visible("Tell Nico") or canvas.is_button_visible(
+        "Start from what you own with Nico"
+    )
+    assert canvas.is_button_visible("Start with Otto") or canvas.is_button_visible(
+        "Start from scratch with Otto"
+    )
 
 
 @pytest.mark.canvas

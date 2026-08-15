@@ -30,19 +30,55 @@ class CanvasPage:
         logger.info("Opening canvas: %s", self._canvas_url)
         self._page.goto(self._canvas_url, wait_until="domcontentloaded")
         self._wait_for_canvas_or_login()
+        self.dismiss_promo()
         share = self._page.get_by_role("button", name="Share canvas")
         if not share.is_visible():
             logger.info("Share control not ready — reloading canvas once")
             self._page.reload(wait_until="domcontentloaded")
             self._wait_for_canvas_or_login()
+            self.dismiss_promo()
+        self._page.get_by_role("button", name="Share canvas").wait_for()
         self._page.get_by_role("button", name="Toolkit").wait_for()
         self._page.get_by_test_id("rf__wrapper").wait_for()
 
     def _wait_for_canvas_or_login(self) -> None:
         share = self._page.get_by_role("button", name="Share canvas")
         login = self._page.get_by_role("heading", name="Welcome")
-        share.or_(login).wait_for()
+        promo = self._page.get_by_text("GRAND PRIZE", exact=False)
+        starter = self._starter_heading()
+        share.or_(login).or_(promo).or_(starter).wait_for()
         self._raise_if_session_expired()
+
+    def _starter_heading(self) -> Locator:
+        return self._page.get_by_role(
+            "heading", name="Pick your starting point"
+        ).or_(
+            self._page.get_by_role("heading", name="What are you starting with?")
+        )
+
+    def _promo_dialog(self) -> Locator:
+        return self._page.get_by_role("dialog").filter(has_text="GRAND PRIZE")
+
+    def dismiss_promo(self) -> None:
+        prize = self._page.get_by_text("GRAND PRIZE", exact=False)
+        if not prize.is_visible():
+            return
+        logger.info("Dismissing promo dialog")
+        dialog = self._promo_dialog()
+        close = dialog.get_by_role("button", name="Close").or_(
+            dialog.get_by_label("Close")
+        )
+        if dialog.is_visible() and close.is_visible():
+            close.click()
+        elif dialog.is_visible():
+            other = dialog.get_by_role("button").filter(has_not_text="Join Now")
+            if other.is_visible():
+                other.first.click()
+            else:
+                self._page.keyboard.press("Escape")
+        else:
+            self._page.keyboard.press("Escape")
+        prize.wait_for(state="hidden")
 
     def _raise_if_session_expired(self) -> None:
         on_login_url = "/login" in self._page.url
@@ -62,26 +98,26 @@ class CanvasPage:
         return self._page.get_by_role("button", name="Share canvas").is_visible()
 
     def is_starter_visible(self) -> bool:
-        return self._page.get_by_role(
-            "heading", name="Pick your starting point"
-        ).is_visible()
+        return self._starter_heading().is_visible()
 
     def start_from_scratch(self) -> None:
         logger.info("Starting canvas from scratch with Otto")
-        self._page.get_by_role("button", name="Start from scratch with Otto").click()
-        self._page.get_by_role("heading", name="Pick your starting point").wait_for(
-            state="hidden"
-        )
+        self._page.get_by_role("button", name="Start from scratch with Otto").or_(
+            self._page.get_by_role("button", name="Start with Otto")
+        ).click()
+        self._starter_heading().wait_for(state="hidden")
 
     def start_from_idea(self) -> None:
         logger.info("Starting canvas from an idea with Margo")
-        self._page.get_by_role("button", name="Start from an idea with Margo").click()
+        self._page.get_by_role("button", name="Start from an idea with Margo").or_(
+            self._page.get_by_role("button", name="Ask Margo")
+        ).click()
 
     def start_from_holdings(self) -> None:
         logger.info("Starting canvas from holdings with Nico")
         self._page.get_by_role(
             "button", name="Start from what you own with Nico"
-        ).click()
+        ).or_(self._page.get_by_role("button", name="Tell Nico")).click()
 
     def ensure_workspace_ready(self) -> None:
         if self.is_starter_visible():
@@ -157,6 +193,7 @@ class CanvasPage:
 
     def dismiss_overlays(self) -> None:
         logger.info("Dismissing overlays")
+        self.dismiss_promo()
         self._page.keyboard.press("Escape")
 
     def fit_to_page(self) -> None:
