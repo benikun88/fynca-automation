@@ -44,9 +44,9 @@ class CanvasPage:
     def _wait_for_canvas_or_login(self) -> None:
         share = self._page.get_by_role("button", name="Share canvas")
         login = self._page.get_by_role("heading", name="Welcome")
-        promo = self._page.get_by_text("GRAND PRIZE", exact=False)
+        promo_close = self._page.get_by_role("button", name="Close announcement")
         starter = self._starter_heading()
-        share.or_(login).or_(promo).or_(starter).wait_for()
+        share.or_(login).or_(promo_close).or_(starter).wait_for()
         self._raise_if_session_expired()
 
     def _starter_heading(self) -> Locator:
@@ -56,29 +56,13 @@ class CanvasPage:
             self._page.get_by_role("heading", name="What are you starting with?")
         )
 
-    def _promo_dialog(self) -> Locator:
-        return self._page.get_by_role("dialog").filter(has_text="GRAND PRIZE")
-
     def dismiss_promo(self) -> None:
-        prize = self._page.get_by_text("GRAND PRIZE", exact=False)
-        if not prize.is_visible():
+        close = self._page.get_by_role("button", name="Close announcement")
+        if not close.is_visible():
             return
-        logger.info("Dismissing promo dialog")
-        dialog = self._promo_dialog()
-        close = dialog.get_by_role("button", name="Close").or_(
-            dialog.get_by_label("Close")
-        )
-        if dialog.is_visible() and close.is_visible():
-            close.click()
-        elif dialog.is_visible():
-            other = dialog.get_by_role("button").filter(has_not_text="Join Now")
-            if other.is_visible():
-                other.first.click()
-            else:
-                self._page.keyboard.press("Escape")
-        else:
-            self._page.keyboard.press("Escape")
-        prize.wait_for(state="hidden")
+        logger.info("Dismissing promo announcement")
+        close.click()
+        close.wait_for(state="hidden")
 
     def _raise_if_session_expired(self) -> None:
         on_login_url = "/login" in self._page.url
