@@ -63,7 +63,7 @@ GitHub does not show a separate Nightly button. Open [Playwright CI (push, PR, n
 
 Live report: https://benikun88.github.io/fynca-automation/
 
-Failed tests attach a screenshot, page URL, and video in the Allure report.
+Failed tests attach a screenshot, page URL, and video on the test itself in the Allure report. Open the failed (or broken) test — attachments are on the Execution tab, not only under fixture teardown.
 
 Required GitHub secret:
 

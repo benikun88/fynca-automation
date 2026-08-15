@@ -5,8 +5,10 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import allure
 import pytest
+from allure_commons.types import AttachmentType
+from allure_commons.utils import uuid4
+from allure_pytest.listener import AllureListener
 from dotenv import load_dotenv
 
 from test.black_box.fynca import Fynca
@@ -44,7 +46,50 @@ def _test_failed(request: pytest.FixtureRequest) -> bool:
     return True
 
 
-def _attach_page_artifacts(page: Page, *, failed: bool) -> None:
+def _allure_listener(config: pytest.Config) -> AllureListener | None:
+    return next(
+        (
+            plugin
+            for plugin in config.pluginmanager.get_plugins()
+            if isinstance(plugin, AllureListener)
+        ),
+        None,
+    )
+
+
+def _attach_to_test(
+    item: pytest.Item,
+    *,
+    name: str,
+    attachment_type: AttachmentType,
+    body: bytes | str | None = None,
+    source: str | None = None,
+) -> None:
+    listener = _allure_listener(item.config)
+    test_uuid = listener._cache.get(item.nodeid) if listener else None
+    if listener is None or test_uuid is None:
+        logger.info("Allure test uuid missing; skip %s attachment", name)
+        return
+    if body is not None:
+        listener.allure_logger.attach_data(
+            uuid4(),
+            body,
+            name=name,
+            attachment_type=attachment_type,
+            parent_uuid=test_uuid,
+        )
+        return
+    if source:
+        listener.allure_logger.attach_file(
+            uuid4(),
+            source,
+            name=name,
+            attachment_type=attachment_type,
+            parent_uuid=test_uuid,
+        )
+
+
+def _attach_page_artifacts(page: Page, *, failed: bool, item: pytest.Item) -> None:
     video = page.video
     if failed:
         try:
@@ -52,18 +97,20 @@ def _attach_page_artifacts(page: Page, *, failed: bool) -> None:
                 png = page.screenshot(full_page=True)
             except Exception:
                 png = page.screenshot()
-            allure.attach(
-                png,
+            _attach_to_test(
+                item,
                 name="screenshot",
-                attachment_type=allure.attachment_type.PNG,
+                attachment_type=AttachmentType.PNG,
+                body=png,
             )
         except Exception as exc:
             logger.info("Could not attach screenshot: %s", exc)
         try:
-            allure.attach(
-                page.url,
+            _attach_to_test(
+                item,
                 name="page-url",
-                attachment_type=allure.attachment_type.TEXT,
+                attachment_type=AttachmentType.TEXT,
+                body=page.url,
             )
         except Exception:
             pass
@@ -78,10 +125,11 @@ def _attach_page_artifacts(page: Page, *, failed: bool) -> None:
     except Exception:
         return
     if failed and video_path.exists():
-        allure.attach.file(
-            str(video_path),
+        _attach_to_test(
+            item,
             name="video",
-            attachment_type=allure.attachment_type.WEBM,
+            attachment_type=AttachmentType.WEBM,
+            source=str(video_path),
         )
         return
     video_path.unlink(missing_ok=True)
@@ -146,7 +194,7 @@ def page(
 ) -> Generator[Page]:
     pg = context.new_page()
     yield pg
-    _attach_page_artifacts(pg, failed=_test_failed(request))
+    _attach_page_artifacts(pg, failed=_test_failed(request), item=request.node)
 
 
 @pytest.fixture
@@ -168,7 +216,7 @@ def unauthenticated_page(
     context = browser.new_context(**browser_context_args)
     page = context.new_page()
     yield page
-    _attach_page_artifacts(page, failed=_test_failed(request))
+    _attach_page_artifacts(page, failed=_test_failed(request), item=request.node)
     context.close()
 
 
