@@ -144,6 +144,8 @@ class CanvasPage:
         logger.info("Opening Agents (Bob & Charlie)")
         self._sidebar("Agents").click()
         self._page.get_by_role("heading", name="Bob & Charlie").wait_for()
+        self._page.get_by_role("textbox", name="Message input").wait_for()
+        self._chat_mode_control("Build").first.wait_for()
 
     def open_ideas(self) -> None:
         logger.info("Opening Ideas")
@@ -197,9 +199,36 @@ class CanvasPage:
 
     def select_chat_mode(self, mode: str) -> None:
         logger.info("Selecting chat mode: %s", mode)
-        tab = self._page.get_by_role("tab", name=mode, exact=True)
-        button = self._page.get_by_role("button", name=mode, exact=True)
-        tab.or_(button).click()
+        control = self._chat_mode_control(mode).first
+        control.wait_for()
+        control.scroll_into_view_if_needed()
+        try:
+            control.click()
+        except Exception:
+            logger.info("Chat mode %s click intercepted; retrying with force", mode)
+            control.click(force=True)
+
+    def _chat_mode_control(self, mode: str) -> Locator:
+        return (
+            self._page.get_by_role("radio", name=mode, exact=True)
+            .or_(self._page.get_by_role("tab", name=mode, exact=True))
+            .or_(self._page.get_by_role("button", name=mode, exact=True))
+            .or_(self._page.locator(f'button[data-mode="{mode.lower()}"]'))
+        )
+
+    def is_tab_visible(self, name: str) -> bool:
+        control = (
+            self._page.get_by_role("radio", name=name, exact=True)
+            .or_(self._page.get_by_role("tab", name=name, exact=True))
+            .or_(self._page.get_by_role("button", name=name, exact=True))
+        )
+        if control.count() == 0:
+            return False
+        try:
+            control.first.scroll_into_view_if_needed(timeout=5_000)
+        except Exception:
+            pass
+        return control.first.is_visible()
 
     def fill_chat_message(self, message: str) -> None:
         logger.info("Filling chat message")
@@ -226,11 +255,6 @@ class CanvasPage:
     def is_button_visible(self, name: str) -> bool:
         locator = self._page.get_by_role("button", name=name)
         return locator.count() > 0 and locator.first.is_visible()
-
-    def is_tab_visible(self, name: str) -> bool:
-        tab = self._page.get_by_role("tab", name=name, exact=True)
-        button = self._page.get_by_role("button", name=name, exact=True)
-        return tab.or_(button).is_visible()
 
     def open_sidebar(self, name: str) -> None:
         logger.info("Opening sidebar: %s", name)
